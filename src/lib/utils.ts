@@ -30,9 +30,20 @@ export function getImageProxyUrl(): string | null {
 
 /**
  * 处理图片 URL，如果设置了图片代理则使用代理
+ * 修改说明：增加了对豆瓣图片的腾讯云 CDN 特殊处理
  */
 export function processImageUrl(originalUrl: string): string {
   if (!originalUrl) return originalUrl;
+
+  // --- 新增：针对豆瓣图片的强制代理逻辑 ---
+  // 如果链接包含 doubanio.com，直接替换为 cmliussss 的腾讯云 CDN
+  if (originalUrl.includes('doubanio.com')) {
+    return originalUrl.replace(
+      /img\d+\.doubanio\.com/g,
+      'img.doubanio.cmliussss.net'
+    );
+  }
+  // --- 新增结束 ---
 
   const proxyUrl = getImageProxyUrl();
   if (!proxyUrl) return originalUrl;
