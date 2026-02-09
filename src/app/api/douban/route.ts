@@ -12,17 +12,6 @@ interface DoubanApiResponse {
   }>;
 }
 
-// 增加一个简单的辅助函数来处理图片代理
-// 使用 images.weserv.nl 免费缓存服务，它会自动处理跨域和Referer
-const wrapImage = (url: string) => {
-  if (!url) return '';
-  // 如果已经是代理过的地址，就不处理
-  if (url.includes('weserv.nl')) return url;
-  // 将 http 强制转为 https
-  const secureUrl = url.replace(/^http:/, 'https:');
-  return `https://images.weserv.nl/?url=${encodeURIComponent(secureUrl)}`;
-};
-
 async function fetchDoubanData(url: string): Promise<DoubanApiResponse> {
   // 添加超时控制
   const controller = new AbortController();
@@ -103,14 +92,13 @@ export async function GET(request: Request) {
 
   try {
     // 调用豆瓣 API
-    const doubanData = await fetchDoubanData(target); // 注意这里我去掉了泛型 <DoubanApiResponse> 因为TS通常能自动推断，或者你需要保留原来的写法
+    const doubanData = await fetchDoubanData(target);
 
     // 转换数据格式
     const list: DoubanItem[] = doubanData.subjects.map((item) => ({
       id: item.id,
       title: item.title,
-      // 【修改点 1】在这里包裹代理地址
-      poster: wrapImage(item.cover),
+      poster: item.cover,
       rate: item.rate,
       year: '',
     }));
@@ -178,14 +166,13 @@ function handleTop250(pageStart: number) {
         const cover = match[3];
         const rate = match[4] || '';
 
-        // 【修改点 2】在这里包裹代理地址，Top250 也要改
-        // 这里的 wrapImage 包含了之前的 "replace http with https" 逻辑
-        const processedPoster = wrapImage(cover);
+        // 处理图片 URL，确保使用 HTTPS
+        const processedCover = cover.replace(/^http:/, 'https:');
 
         movies.push({
           id: id,
           title: title,
-          poster: processedPoster,
+          poster: processedCover,
           rate: rate,
           year: '',
         });
